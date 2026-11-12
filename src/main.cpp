@@ -52,7 +52,9 @@ void servoWrite(int pin, int channel, int pulseUs) {
 
 void writeServos() {
   servoWrite(PIN_SERVO_PAN, kPanChannel, controller.pan().pulseUs());
+#if HAS_TILT
   servoWrite(PIN_SERVO_TILT, kTiltChannel, controller.tilt().pulseUs());
+#endif
 }
 
 // Remembers where the antenna points so the next power-up starts from the
@@ -112,7 +114,9 @@ void pollJoystick() {
     active = false;
   } else if (x != 0 || y != 0) {
     controller.pan().jog(x * controller.pan().config().maxSpeedDps);
+#if HAS_TILT
     controller.tilt().jog(y * controller.tilt().config().maxSpeedDps);
+#endif
     active = true;
   } else if (active) {
     // Only on release, so an idle stick never cancels Wi-Fi/serial commands.
@@ -136,7 +140,9 @@ void setup() {
   controller.setNorthOffset(savedNorth);
 
   servoAttach(PIN_SERVO_PAN, kPanChannel);
+#if HAS_TILT
   servoAttach(PIN_SERVO_TILT, kTiltChannel);
+#endif
   writeServos();
 
 #if HAS_JOYSTICK

@@ -23,7 +23,7 @@ static bool starts(const std::string& s, const char* p) { return s.rfind(p, 0) =
 static Config cfg() {
   AxisConfig pan{-130, 130, 30, 60, 270, 500, 2500, false, 0};
   AxisConfig tilt{-15, 60, 20, 40, 270, 500, 2500, false, 0};
-  return Config{pan, tilt, 0.6f};
+  return Config{pan, tilt, 0.6f, true};
 }
 
 static const float kDt = 0.02f;
@@ -138,6 +138,21 @@ static void testNorthAndGoto() {
   CHECK(c.status().find("az=10.0") != std::string::npos);
 }
 
+static void testPanOnly() {
+  Config k = cfg();
+  k.hasTilt = false;
+  Controller c(k);
+  CHECK(starts(c.handle("GOTO 40 75"), "OK"));  // elevation ignored, not range-checked
+  run(c, 5);
+  CHECK(near(c.pan().position(), 40));
+  CHECK(near(c.tilt().position(), 0, 0.001f));
+  CHECK(starts(c.handle("TILT 10"), "ERR"));
+  c.handle("JOG 0 20");
+  run(c, 0.5f);
+  CHECK(near(c.tilt().position(), 0, 0.001f));
+  CHECK(c.status().find("tiltaxis=0") != std::string::npos);
+}
+
 static void testParser() {
   Controller c(cfg());
   CHECK(starts(c.handle(""), "ERR"));
@@ -161,6 +176,7 @@ int main() {
   testPulseMapping();
   testJogDeadmanAndLimits();
   testNorthAndGoto();
+  testPanOnly();
   testParser();
   if (failures) {
     std::printf("%d check(s) failed\n", failures);

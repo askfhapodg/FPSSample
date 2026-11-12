@@ -26,13 +26,13 @@ form button{font-size:15px;padding:10px 14px}
 </style></head><body>
 <h1>Antenna rotator</h1>
 <div class="read">
-<div><small>Azimuth</small><b id="az">–</b>°</div>
-<div><small>Elevation</small><b id="el">–</b>°</div>
+<div><small>Azimuth</small><b id="az">–</b></div>
+<div><small>Elevation</small><b id="el">–</b></div>
 </div>
 <div class="pad">
-<span></span><button data-j="0,1">▲</button><span></span>
+<span></span><button data-j="0,1" class="tilt">▲</button><span></span>
 <button data-j="-1,0">◀</button><button class="stop" id="stop">STOP</button><button data-j="1,0">▶</button>
-<span></span><button data-j="0,-1">▼</button><span></span>
+<span></span><button data-j="0,-1" class="tilt">▼</button><span></span>
 </div>
 <form id="goto"><input id="gaz" type="number" step="any" placeholder="azimuth °" required>
 <input id="gel" type="number" step="any" placeholder="elevation °" value="0" required><button>Go</button></form>
@@ -52,7 +52,8 @@ function show(t){
   if(!t.startsWith('OK')){$('msg').textContent=t.replace(/^ERR /,'');return;}
   $('msg').textContent='';
   const kv=Object.fromEntries(t.slice(3).split(' ').map(p=>p.split('=')));
-  $('az').textContent=kv.az;$('el').textContent=kv.el;
+  $('az').textContent=kv.az+'°';$('el').textContent=kv.tiltaxis==='1'?kv.el+'°':'manual';
+  document.querySelectorAll('.tilt').forEach(b=>b.style.visibility=kv.tiltaxis==='1'?'visible':'hidden');
 }
 function release(){if(timer){clearInterval(timer);timer=null;cmd('STOP');}}
 document.querySelectorAll('[data-j]').forEach(b=>{

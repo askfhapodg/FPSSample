@@ -55,6 +55,9 @@ struct Config {
   // A JOG command expires after this long unless it is repeated, so a lost
   // link or a closed browser tab cannot leave the antenna turning.
   float jogTimeoutS;
+  // False for a pan-only build (tilt set by hand): elevations are accepted
+  // and ignored, and the tilt axis never moves.
+  bool hasTilt;
 };
 
 class Controller {
@@ -84,6 +87,7 @@ class Controller {
   Axis pan_;
   Axis tilt_;
   float jogTimeoutS_;
+  bool hasTilt_;
   float jogRemainingS_ = 0;
   float northOffset_ = 0;
 };

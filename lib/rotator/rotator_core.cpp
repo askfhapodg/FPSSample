@@ -107,7 +107,10 @@ int Axis::pulseUs() const {
 }
 
 Controller::Controller(const Config& config)
-    : pan_(config.pan), tilt_(config.tilt), jogTimeoutS_(config.jogTimeoutS) {}
+    : pan_(config.pan),
+      tilt_(config.tilt),
+      jogTimeoutS_(config.jogTimeoutS),
+      hasTilt_(config.hasTilt) {}
 
 void Controller::setNorthOffset(float deg) { northOffset_ = wrap360(deg); }
 
@@ -126,11 +129,11 @@ void Controller::update(float dt) {
 }
 
 std::string Controller::status() const {
-  char buf[160];
+  char buf[176];
   std::snprintf(buf, sizeof(buf),
-                "OK az=%.1f el=%.1f pan=%.1f tilt=%.1f north=%.1f moving=%d", azimuth(),
-                tilt_.position(), pan_.position(), tilt_.position(), northOffset_,
-                (pan_.moving() || tilt_.moving()) ? 1 : 0);
+                "OK az=%.1f el=%.1f pan=%.1f tilt=%.1f north=%.1f moving=%d tiltaxis=%d",
+                azimuth(), tilt_.position(), pan_.position(), tilt_.position(), northOffset_,
+                (pan_.moving() || tilt_.moving()) ? 1 : 0, hasTilt_ ? 1 : 0);
   return buf;
 }
 
@@ -142,14 +145,14 @@ std::string Controller::gotoAzEl(float az, float el) {
                   mech, pan_.config().minDeg, pan_.config().maxDeg);
     return buf;
   }
-  if (!tilt_.inRange(el)) {
+  if (hasTilt_ && !tilt_.inRange(el)) {
     std::snprintf(buf, sizeof(buf), "ERR elevation out of range (limits %.1f..%.1f)",
                   tilt_.config().minDeg, tilt_.config().maxDeg);
     return buf;
   }
   jogRemainingS_ = 0;
   pan_.setTarget(mech);
-  tilt_.setTarget(el);
+  if (hasTilt_) tilt_.setTarget(el);
   return status();
 }
 
@@ -187,13 +190,14 @@ std::string Controller::handle(const std::string& line) {
     return status();
   }
   if (c == "TILT" && args == 1) {
+    if (!hasTilt_) return "ERR no tilt axis (tilt is set by hand)";
     if (!tilt_.inRange(a)) return "ERR tilt out of range";
     tilt_.setTarget(a);
     return status();
   }
   if (c == "JOG" && args == 2) {
     pan_.jog(a);
-    tilt_.jog(b);
+    tilt_.jog(hasTilt_ ? b : 0);
     jogRemainingS_ = jogTimeoutS_;
     return status();
   }

@@ -14,6 +14,12 @@
 #define PIN_SERVO_PAN 18
 #define PIN_SERVO_TILT 19
 
+// 0 = pan-only build: tilt is set by hand on the ROC-4's ball head and no
+// tilt servo is fitted. 1 = motorised tilt on PIN_SERVO_TILT.
+#ifndef HAS_TILT
+#define HAS_TILT 0
+#endif
+
 // Optional wired joystick at the base (KY-023 or similar). Leave at 0 unless
 // one is actually connected: floating analog pins would move the antenna.
 #ifndef HAS_JOYSTICK
@@ -24,12 +30,14 @@
 #define PIN_JOY_BUTTON 32  // press = STOP
 
 // --- Mechanics ---------------------------------------------------------------
-// Defaults are for 270-degree digital servos (500-2500 us), e.g. DS3235SG-270.
+// Defaults are for a 270-degree digital servo such as the PowerHD LF-20MG-270.
+// Its listing gives no pulse range: 500-2500 us is assumed, so check that a
+// PAN 90 command really turns the antenna 90 degrees and adjust minUs/maxUs.
 // For a 180-degree servo set servoSpanDeg to 180 and tighten the limits.
 // Fields: minDeg, maxDeg, maxSpeedDps, accelDps2, servoSpanDeg, minUs, maxUs,
 //         invert, trimDeg
 inline rotator::Config rotatorConfig() {
   rotator::AxisConfig pan{-130, 130, 30, 60, 270, 500, 2500, false, 0};
   rotator::AxisConfig tilt{-15, 60, 20, 40, 270, 500, 2500, false, 0};
-  return rotator::Config{pan, tilt, 0.6f};
+  return rotator::Config{pan, tilt, 0.6f, HAS_TILT != 0};
 }
