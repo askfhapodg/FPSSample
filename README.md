@@ -53,7 +53,7 @@ over 150 €). Items marked "4–7 days" are ordered in by the shop.
 | 330 Ω resistor, heat-shrink, hook-up wire | — | ~1 € | |
 | USB power bank, 5 V ≥ 3 A, two ports (e.g. Kruger&Matz 10000 mAh PD) | — | 22.40 € | Or any power bank you already have |
 
-Electronics total: about **107 €** without the power bank, about **72 €**
+Electronics total: about **107 €** without the power bank, about **75 €**
 without the tracking receiver.
 
 ### Mechanics (not found at anodas.lt)
