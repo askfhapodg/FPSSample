@@ -1,151 +1,159 @@
-![](Documentation/Images/Banner.png)
+# Antenna rotator
 
-# FPS Sample
+A DIY pan/tilt rotator that puts an **ACASOM ROC-4** booster antenna
+(0.53 kg, 230 × 146 × 39 mm) on a **K&M 20800** overhead stand (3/8" thread,
+up to 3.1 m) and lets you aim it from the base of the stand or from a phone.
 
-**Update about the state of the project:**
-This project is based on Unity 2018.3 and no longer being actively maintained.
-Feel free to continue to use it as a learning resource or simply for
-inspiration. As always, you should upgrade to latest version of Unity
-and packages if you intend to start a project.
+All electronics sit in a box at the base. Only two servos go up the mast.
 
-Thanks for checking out this sample!
+**Status:** the firmware compiles for ESP32 and the motion/command logic has
+passing unit tests. It has **not been run on real hardware yet** — treat pin
+choices, servo calibration and the parts list as a first build to be checked
+on the bench before the antenna goes up.
 
-This is a fully functional, first person multiplayer shooter game made in
-Unity and with full source and assets. It was developed by a small
-team from Unity Technologies. Our goals are to test and showcase new
-features in Unity and to be of use for teams who can bootstrap on top of
-this, extract useful bits and tools or simply learn from and get inspired by
-what is in the project.
+## How it is controlled
 
-Visit our [landing page](https://unity.com/fps-sample) for more high
-level information about the project. Or reach out [in the forum](https://forum.unity.com/forums/fps-sample-game.184).
+| Input | Use |
+|---|---|
+| Phone, over the rotator's own Wi-Fi | Hold-to-move arrows, go-to azimuth/elevation, STOP |
+| USB serial (115200 baud) | Same commands as text lines; this is the hook for a future tracker |
+| Wired joystick at the base (optional) | Works with no radio at all |
 
-The project is using a number of new technologies: We use the new [HD Render
-Pipeline](https://github.com/Unity-Technologies/ScriptableRenderPipeline), meaning 
-all content has been authored for HDRP. We are also using the new
-[network transport layer](https://github.com/Unity-Technologies/multiplayer) as well as the [Entity-Component System](https://unity3d.com/unity/features/job-system-ECS). 
-In the case of ECS, we have primarily adopted the "ECS-pattern" and use it in
-hybrid mode with a lot of regular components. As more and more features of
-Unity become available in ECS-aware versions, we will migrate to them.
+Every input uses one small text protocol, so anything that can compute an
+azimuth and elevation (a laptop, a Raspberry Pi, a tracking script) can drive
+the antenna without firmware changes.
 
-## Status and prerequisites
+## Parts
 
-Current status at a glance:
+| Part | Notes |
+|---|---|
+| ESP32 DevKit (ESP32-WROOM-32, 30 or 38 pin) | Any `esp32dev`-compatible board |
+| 2 × 270° digital metal-gear servo, 30–35 kg·cm class | e.g. DS3235SG-270. Check the listing says 270° and 500–2500 µs |
+| Metal 2-axis pan/tilt bracket **with a pan bearing**, for standard-size servos | The bearing must carry the antenna's weight, not the servo shaft |
+| UBEC / buck converter, 6 V output, 8 A or more | Powers both servos and the ESP32 |
+| 12 V source: 3S Li-ion pack or a USB-C PD 12 V trigger + power bank | |
+| 2 × electrolytic capacitor 1000–2200 µF, 10 V or more | One at the servos, one at the ESP32 |
+| 2 × 330 Ω resistor | In series with each servo signal wire |
+| 4 m shielded 4-core cable, power pair 0.75 mm² (18 AWG) or thicker | Base box to mast head |
+| Clip-on ferrite, 1–2 pcs | On the cable just below the servos |
+| Plate or flange with a 3/8" female thread | Joins the pan/tilt base to the stand |
+| 1/4"-20 screw, about 10 mm, plus washer | Fixes the ROC-4 tripod bracket to the tilt plate |
+| Optional: KY-023 joystick module | Wired control at the base |
+| Enclosure, fuse (5 A), switch, sandbag for the stand | |
+
+## Wiring
+
 ```
-Unity version: 2018.3.8f1
-Platforms    : Windows (client and server) and Linux (server only)
+12 V ──fuse──switch──► UBEC 6 V ──┬──────────────► servo + (both)      ┐
+                                  ├──► ESP32 VIN                       │ up the
+GND ──────────────────────────────┴──► ESP32 GND ─► servo − (both)     │ mast,
+ESP32 GPIO18 ──330 Ω────────────────────────────► pan servo signal     │ shielded
+ESP32 GPIO19 ──330 Ω────────────────────────────► tilt servo signal    ┘
+
+Optional joystick:  VRx → GPIO34   VRy → GPIO35   SW → GPIO32   + → 3V3   GND → GND
 ```
 
-## Getting the project
+- Put one capacitor across + and − at the mast head and one at the ESP32 VIN
+  pin. Without them a servo starting up can reset the ESP32.
+- Connect the cable shield to GND at the base end only.
+- Pins and Wi-Fi settings live in `src/config.h`.
+- Set `HAS_JOYSTICK` to `1` only when a joystick is really connected;
+  unconnected analog pins would move the antenna on their own.
 
-To get the project folder you need to clone the project.
-Note, that 
+## Mechanical assembly
 
-> __IMPORTANT__: 
-> This project uses Git Large Files Support (LFS). Downloading a zip file using the green button on Github
-> **will not work**. You must clone the project with a version of git that has LFS.
-> You can download Git LFS here: https://git-lfs.github.com/.
+1. Screw the 3/8" plate onto the stand's thread and bolt the pan/tilt base to it.
+2. Fit the ROC-4's tripod bracket and fix it to the tilt plate with the 1/4" screw.
+   Keep the antenna's centre of mass close to the tilt axis.
+3. Power the electronics **before** attaching the servo horns, so the servos
+   sit at their saved position (centre on first boot). Attach the horns with the
+   antenna facing straight ahead and level.
+4. Tie the coax and the servo cable to the mast with a loose loop at the top
+   that allows the full ±130° sweep without pulling on the N-type connectors.
+5. Weigh the base down. The head adds roughly 0.5 kg on top of the antenna,
+   and the stand was designed for a microphone.
 
-The project size is about 18GB (size of Assets folder). Your cloned repository
-will be almost double of that due to git state. If it is much smaller,
-you most likely did not have LFS when you cloned.
+## Build and flash
 
-## Getting the right version of Unity
+```sh
+pip install platformio
+pio run -t upload        # compile and flash over USB
+pio device monitor       # serial console, 115200 baud
+make test                # unit tests on the PC, no hardware needed
+```
 
-Once you have cloned the repository, you should install
-the version of Unity that is listed above in the prerequisites section. Make
-sure you include windows standalone support in your installation (and Linux support
-if you want to build the Linux headless server).
+Change `WIFI_PASSWORD` in `src/config.h` before the first flash.
 
-## Opening the project for the first time
+## Using it
 
-The following guide should take you to the point where
-you can hit play in the editor and run around the levels and also build a
-standalone version of the game and use it to spin up a server and connect a
-few clients to it.
+Join the Wi-Fi network `antenna-rotator` and open `http://192.168.4.1/`.
 
-The first time you open the project you need patience! It takes a while
-to import all the assets.
+- **Arrows** move while held and stop on release. If the connection drops,
+  the antenna stops by itself after 0.6 s.
+- **Go** moves to an azimuth and elevation.
+- **Set** tells the rotator which compass bearing the antenna is pointing at
+  now. After that, azimuths are real compass bearings. The value is saved.
 
-> __NOTE__: Due to a bug in Unity 2018.3, you have to take the following step right after the initial import:
-> 1 Search for `Firstperson_Projection` in the Project search field. Select the 4 shaders, right click and reimport them.
-> 2 If you have script compile errors related to entities, you need to remove and re-install the entities package.
->
-> One day soon we will remove this note and there will be cake.
+### Commands
 
-Once the editor is ready, open the _Project Tools Window_ by
-navigating to ___FPS Sample > Windows > Project tools___.
+Send as a serial line, or as `POST /api/cmd` with form field `c`.
+Replies start with `OK` followed by the status, or `ERR` and a reason.
 
-It should look like this:
+| Command | Effect |
+|---|---|
+| `GOTO <az> <el>` | Point at azimuth/elevation in degrees |
+| `PAN <deg>` / `TILT <deg>` | Move one axis to a mechanical angle (0 = centre) |
+| `JOG <pan °/s> <tilt °/s>` | Move at a rate; must be repeated at least every 0.6 s |
+| `STOP` | Decelerate and hold |
+| `HOME` | Pan 0, tilt 0 |
+| `NORTH <bearing>` | Declare the current pointing direction as this compass bearing |
+| `STATUS` | `OK az=… el=… pan=… tilt=… north=… moving=0/1` |
 
-![](Documentation/Images/ProjectTools.png)
+```sh
+curl -d 'c=GOTO 45 10' http://192.168.4.1/api/cmd
+```
 
-Keep this window docked as you will use it a lot. From here you can open the
-levels, build assetbundles and build standalone players. Because this is a
-multiplayer game you will need to work with standalone players a lot.
+## Limits and things to know
 
-### Trying out preview mode
+- **Pan covers ±130°, not a full circle.** Hobby servos cannot turn
+  continuously, and the coax could not follow anyway. Face the stand towards
+  the middle of the sector you work in. A request outside the range returns
+  an error instead of moving somewhere else.
+- **No position feedback.** The firmware knows where it told the servos to go,
+  not where they are. A stalled or overloaded servo goes unnoticed.
+- **Wi-Fi shares the 2.4 GHz band with the drone link.** The ROC-4 transmits
+  10 W there, so the phone connection may drop while flying on 2.4 GHz, and the
+  access point adds a little noise of its own. If that happens, change
+  `WIFI_CHANNEL`, fly on 5.8 GHz, or use the joystick or USB serial, which need
+  no radio.
+- **RF pickup.** The servo cable runs next to a 10 W transmitter. If the servos
+  twitch while the booster transmits, the shielded cable, ferrite and series
+  resistors above are the fix; a 3.3 V → 5 V level shifter on the signal lines
+  is the next step.
+- The antenna position is saved after each move, so power-up does not swing
+  the antenna. If it was turned by hand while off, it will snap back.
 
-From the Project Tools window click __Open__ next to Level_00. Our levels are
-split into multiple scenes but using these buttons will ensure you open all the scenes
-that make up a level.
+## Code layout
 
-Once opened, try entering playmode in the editor. You should now
-be able to run around in the level. This is what we call 'preview mode'. Here
-you can move around and test your level, player traversal and weapons.
+| Path | Contents |
+|---|---|
+| `lib/rotator/` | Portable core: axis motion profile, limits, command protocol |
+| `src/main.cpp` | ESP32 glue: servo PWM, Wi-Fi, web server, serial, joystick, storage |
+| `src/config.h` | Pins, Wi-Fi, servo calibration, speeds and limits |
+| `src/web_ui.h` | The phone control page |
+| `test/host/` | Unit tests for the core |
 
-### Building bundles and standalone
+## Roadmap: drone tracking
 
-Leave playmode again and in the Project Tools window, verify that
-it says "Building for: StandaloneWindows64..." under the Game headline.
-If it does not, change your platform in the usual way, using File > Build
-settings window.
+Tracking reduces to sending `GOTO <az> <el>` a few times per second. What it
+still needs:
 
-Now, in the Project Tools window in the bundles section, press __All \[force\]__.
+1. **Where the mast is and which way it faces** — a GPS module and a compass
+   (or the manual `NORTH` setting used today).
+2. **Where the drone is** — live latitude, longitude and altitude from the
+   drone's telemetry, delivered to the rotator over serial or Wi-Fi.
+3. **The maths** — bearing and elevation from the two positions, added either
+   as a `TRACK <lat> <lon> <alt>` command in the core or in a companion script.
 
-This will build the levels and other assets into assetbundles. The first time
-around this will take a significant amount of time as all shaders have to be
-compiled.
-
-Once you have built the bundles, hit __Build game__ in the game section.
-This builds the standalone player. Again, first time will be slow.
-
-> __NOTE__: Due to a limitation in Unity 2018.3, you have to look out for errors like this `Maximum number (256) of shader keywords exceeded, keyword <KEYWORD_NAME> will be ignored.` and similar. If you get these, you can close and open Unity and then try and build again. The errors are relatively harmless but can lead to graphical artifacts as some shaders will have wrong keywords.
-
-### Using the quick start launcher
-
-When this is done, locate the "Quick start" section at the bottom of the
-Project Tools window. Fill out the settings like this:
-
-> Mode: __Multiplayer__\
-> Level: __Level_00__\
-> Clients: __1__\
-> Headless: __Checked__\
-> Use editor: __Unused__
-
-Now hit the green __Start__ button. This should launch two processes: one is
-a standalone, headless server, the other is a client that will attempt to
-connect to the server.
-
-Congratulations! If you made it this far you should celebrate a bit!
-
-## Development of FPS Sample, Contributions etc.
-
-As of today, internally development of the project happens on Perforce. We
-push versions of the project to github from there. As we do that we will update
-the [CHANGELOG](CHANGELOG.md) with highlights but the full history is not
-carried over.
-
-For practical reasons we are not able to take larger contributions
-just now. But bugfixes are very welcome! Read the guidelines for
-contributing in [CONTRIBUTING](CONTRIBUTING.md).
-
-## More information
-
-Check out the [Documentation](Documentation/) folder for more information. In particular, the [Getting Started Guide](Documentation/GettingStarted.md) is a good place to, well, start.
-
-## License
-
-Our intention is that you can use everything in this project as a starting
-point or as bits and pieces in your own Unity games. For the legal words, see
-[LICENSE.md](LICENSE.md).
+A full-circle pan axis (stepper motor with a belt drive and a homing sensor)
+would replace the pan servo; the `Axis` class is the only part that changes.
