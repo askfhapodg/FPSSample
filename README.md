@@ -37,7 +37,7 @@ the antenna without firmware changes.
 | 4 m shielded 4-core cable, power pair 0.75 mm² (18 AWG) or thicker | Base box to mast head |
 | Clip-on ferrite, 1–2 pcs | On the cable just below the servos |
 | Plate or flange with a 3/8" female thread | Joins the pan/tilt base to the stand |
-| 1/4"-20 screw, about 10 mm, plus washer | Fixes the ROC-4 tripod bracket to the tilt plate |
+| 1/4"-20 screw, about 10 mm, plus washer | Fixes the ROC-4's ball-head mount to the tilt plate (check the thread in its base first) |
 | Optional: KY-023 joystick module | Wired control at the base |
 | Enclosure, fuse (5 A), switch, sandbag for the stand | |
 
@@ -63,8 +63,11 @@ Optional joystick:  VRx → GPIO34   VRy → GPIO35   SW → GPIO32   + → 3V3 
 ## Mechanical assembly
 
 1. Screw the 3/8" plate onto the stand's thread and bolt the pan/tilt base to it.
-2. Fit the ROC-4's tripod bracket and fix it to the tilt plate with the 1/4" screw.
-   Keep the antenna's centre of mass close to the tilt axis.
+2. The ROC-4 ships with a mini ball head whose locking shoe grips the antenna's
+   bottom edge, between the two N connectors. Screw the ball head's base to the
+   tilt plate with the 1/4" screw, set the antenna upright and lock the ball hard.
+   The antenna then stands about 15 cm above the tilt plate, so keep tilt angles
+   moderate; the default limits (−15° to +60°) are a starting point to test.
 3. Power the electronics **before** attaching the servo horns, so the servos
    sit at their saved position (centre on first boot). Attach the horns with the
    antenna facing straight ahead and level.
